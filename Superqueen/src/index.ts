@@ -141,7 +141,7 @@ class Pawn extends Piece {
       return moves;
   }
   getSymbol(): string {
-      return this.color === 'white'?'P':'p';
+      return this.color === 'white'?'P':'p'
   }
 }
 class Knight extends Piece{
@@ -279,6 +279,7 @@ board.display();
 
 const from = { x:5, y: 1 };
 const to = { x: 5, y: 2 }; // Example knight move
+
 
 if (board.movePiece(from, to)) {
   console.log("Move successful!");
