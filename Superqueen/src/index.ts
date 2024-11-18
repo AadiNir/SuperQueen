@@ -183,7 +183,7 @@ class Board {
 
   isPositionEmptyOrOpponent(position: Position, color: 'white' | 'black'): boolean {
     const piece = this.getPieceAtPosition(position);
-    return !piece || piece.color !== color;
+      return !piece || piece.color !== color;
   }
 
   getPieceAtPosition(position: Position): Piece | null {
@@ -204,6 +204,76 @@ class Board {
     }
   }
     return false;
+  }
+  isCheck(color: 'white' | 'black'): boolean {
+    const king = this.pieces.find(piece => piece instanceof King && piece.color === color);
+    if (!king) return false;
+
+    // Check if any of the opponent's pieces can attack the king
+    const opponentPieces = this.pieces.filter(piece => piece.color !== color);
+    for (const piece of opponentPieces) {
+      const availableMoves = piece.getAvailableMoves(this);
+      if (availableMoves.some(move => move.x === king.position.x && move.y === king.position.y)) {
+        return true; // King is under attack
+      }
+    }
+    return false; // King is not under attack
+  }
+
+  isCheckmate(color: 'white' | 'black'): boolean {
+    if (!this.isCheck(color)) {
+      return false; 
+    }
+
+    const king = this.pieces.find(piece => piece instanceof King && piece.color === color);
+    if (!king) return false;
+
+    const opponentPieces = this.pieces.filter(piece => piece.color !== color);
+    const attackingPieces = opponentPieces.filter(piece => {
+      const availableMoves = piece.getAvailableMoves(this);
+      return availableMoves.some(move => move.x === king.position.x && move.y === king.position.y);
+    });
+
+    for (const piece of attackingPieces) {
+      const attackPosition = piece.position;
+      const availableMoves = this.pieces.filter(p => p.color === color).flatMap(p => p.getAvailableMoves(this));
+      
+      if (availableMoves.some(move=> move.x === attackPosition.x && move.y === attackPosition.y)) {
+        return false; 
+      }
+    }
+
+    for (const piece of this.pieces.filter(p => p.color === color)) {
+      const availableMoves = piece.getAvailableMoves(this);
+      for (const move of availableMoves) {
+        const lineOfAttack = this.getLineOfAttack(king.position, move);
+        if (lineOfAttack.some(position => this.isPositionEmpty(position) || this.isPositionOccupiedByOpponent(position, color))) {
+          return false; 
+        }
+      }
+    }
+
+    return true; 
+  }
+
+  private getLineOfAttack(kingPosition: Position, attackingPiecePosition: Position): Position[] {
+    const lineOfAttack: Position[] = [];
+    const dx = Math.sign(attackingPiecePosition.x - kingPosition.x);
+    const dy = Math.sign(attackingPiecePosition.y - kingPosition.y);
+    
+    let currentX = kingPosition.x + dx;
+    let currentY = kingPosition.y + dy;
+    
+    while (this.isPositionValid({ x: currentX, y: currentY })) {
+      lineOfAttack.push({ x: currentX, y: currentY });
+      if (currentX === attackingPiecePosition.x && currentY === attackingPiecePosition.y) {
+        break;
+      }
+      currentX += dx;
+      currentY += dy;
+    }
+
+    return lineOfAttack;
   }
   movePiece(from: Position, to: Position): boolean {
     if (this.isMoveValid(from, to)) {
@@ -236,7 +306,7 @@ class Board {
 
   initializeBoard(): void {
     this.addPiece(new King({ x: 4, y: 0 }, 'white'));
-    this.addPiece(new QueenKnight({ x: 3, y: 0 }, 'white'));  // QueenKnight with additional moves
+    this.addPiece(new QueenKnight({ x: 5, y: 5 }, 'white'));  // QueenKnight with additional moves
     this.addPiece(new Rook({x:0,y:0},'white'));
     this.addPiece(new Rook({x:7,y:0},'white'));
     this.addPiece(new Bishop({x:2,y:0},'white'));
@@ -286,5 +356,7 @@ if (board.movePiece(from, to)) {
 } else {
   console.log("Invalid move.");
 }
+console.log(board.isCheck('black'));
+console.log(board.isCheckmate('black'))
 
 board.display();
